@@ -9,14 +9,31 @@ class RayTrace():
         self.setGeometry()
         self._zStep = 0.001
 
+        # Coordinate transfers for X/Y flips
+        self.inverseX = np.ones(9) 
+        self.inverseX[1] *= -1
+        self.inverseX[5] *= -1
+        self.inverseX[7] *= -1
+
+        self.inverseY = np.ones(9) 
+        self.inverseY[3] *= -1
+        self.inverseY[5] *= -1
+        self.inverseY[6] *= -1
+
+        # x-y location of the tile
+        # This corresponds to the scan offset
+        self.xtile = 0
+        self.ytile = 0
+        
+
 
     '''
         Equation of a polynomial surface
     '''
     def getPoly(self, x, y, parms):
         # Because centre is defined as 0,0 npt 45,45
-        xi = x -45
-        yi = y -45
+        xi = x -45 + self.xtile 
+        yi = y -45 + self.ytile 
         z = parms[0] + parms[1]*xi + parms[2]*xi*xi + parms[3]*yi 
         z += parms[4]*yi*yi + parms[5]*xi*yi +parms[6]*xi*xi*yi + parms[7]*xi*yi*yi +parms[8]*xi*xi*yi*yi
 
@@ -27,8 +44,8 @@ class RayTrace():
     '''
     def getSurfaceNormal(self, x, y, parms):
         # Because centre is defined as 0,0 npt 45,45
-        xi = x -45
-        yi = y -45
+        xi = x -45 + self.xtile 
+        yi = y -45 + self.ytile 
 
         # dsdx
         dsdx = parms[1] + 2*parms[2]*xi 
@@ -72,13 +89,14 @@ class RayTrace():
     '''
         Setting up the radiator
     '''
-    def setRadiator(self, surfFront, surfBack, indexMap, thickness):
+    def setRadiator(self, surfFront, surfBack, indexMap, frameThickness):
 
         # Assuming the polynomial coeficients
         self.surfFront = surfFront 
-        self.surfBack = surfBack 
+        # Back surface measurement is flipped about the x axis (x -> -x)
+        self.surfBack = surfBack * self.inverseX  
         self.indexMap = indexMap
-        self.thickness = thickness
+        self.frameThickness = frameThickness
 
     '''
         Setting the geometry
@@ -115,7 +133,7 @@ class RayTrace():
         Get the thickness at location x,y
     '''
     def getThickness(self, x, y):
-        return self.getPoly(x, y, self.thickness)
+        return self.getPoly(x, y, self.surfFront) + self.getPoly(x, y, self.surfBack) - self.frameThickness 
 
     '''
         Get the front Surface at location x,y
@@ -491,3 +509,17 @@ class RayTrace():
         points.append([xi,yi,zi])
 
         return np.array(points)
+
+
+    # Return the location of the point on the screen for a given index map
+    def getProjection(self, indexMap, x0, y0, thetax0, thetay0, xtile, ytile):
+
+
+        # This assumes the laser never moves
+        # The tile is moved instead
+        self.xtile = xtile
+        self.ytile = ytile
+        
+        self.indexMap = indexMap
+        points = self.propagateLaserNoDebug(x0, y0, thetax0, thetay0)[-1]
+        return points[0], points[1] # assume z \approx plane 
