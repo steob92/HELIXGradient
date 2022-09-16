@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
+from astropy.io import fits
+
 
 class RayTrace():
 
@@ -87,6 +89,35 @@ class RayTrace():
 
 
     '''
+        Setting up the radiator using a fits file
+    '''
+    def loadRadiator(self, fname):
+        hdul = fits.open(fname)
+        frameThickness = hdul[0].header["TFRAME"]
+        upper = hdul["TileUP"].data
+        lower = hdul["TileDown"].data
+
+        hdul.close()
+
+        # When loading in, the "TileUP" surface is the downstream surface
+        # This is flipped about the x coordinate
+        # upper *= self.inverseX
+        # lower *= self.inverseX
+
+        # Default index map
+        indexMap = [
+                    1.15+00, -0.000005, -0.000005, 0, 
+                    -0.000005, -0.000005, 0, 0,
+                    -0
+                    ] 
+        indexMap = np.array(indexMap)
+        # Note the "front surface" is the be upstream surface
+        # By default this should be the "TileDown" surface 
+        self.setRadiator(lower, upper, indexMap, frameThickness)
+
+
+
+    '''
         Setting up the radiator
     '''
     def setRadiator(self, surfFront, surfBack, indexMap, frameThickness):
@@ -96,12 +127,13 @@ class RayTrace():
         # Back surface measurement is flipped about the x axis (x -> -x)
         self.surfBack = surfBack * self.inverseX  
         self.indexMap = indexMap
-        self.frameThickness = frameThickness
+        self.frameThickness = np.zeros(9)
+        self.frameThickness[0] = frameThickness
 
     '''
         Setting the geometry
     '''
-    def setGeometry(self, dLaserRadiator = 10, dRadiatorImage = 10):
+    def setGeometry(self, dLaserRadiator = 202, dRadiatorImage = 85):
         self._dLaserRadiator = dLaserRadiator
         self._dRadiatorImage = dRadiatorImage
 
@@ -133,7 +165,7 @@ class RayTrace():
         Get the thickness at location x,y
     '''
     def getThickness(self, x, y):
-        return self.getPoly(x, y, self.surfFront) + self.getPoly(x, y, self.surfBack) - self.frameThickness 
+        return self.getPoly(x, y, self.surfFront) + self.getPoly(x, y, self.surfBack) - self.frameThickness[0]
 
     '''
         Get the front Surface at location x,y
@@ -146,7 +178,7 @@ class RayTrace():
         Get the back Surface at location x,y
     '''
     def getBackSurface(self, x, y):
-        return self.getPoly(x, y, self.surfback)
+        return self.getPoly(x, y, self.surfBack)
 
     '''
         Propagate Laser through the radiator
@@ -184,7 +216,13 @@ class RayTrace():
         ####################################################################################
         
         # Find the intersection with the surface
-        minz = lambda z: np.abs(z - (self.getPoly(xi + z*np.tan(thetax0), yi + z*np.tan(thetay0), self.surfFront) + self._dLaserRadiator))
+        # Tile is "suspended" in the frame
+        minz = lambda z: np.abs(z - (
+                                self.frameThickness[0] - self.getFrontSurface(
+                                    xi + z*np.tan(thetax0), 
+                                    yi + z*np.tan(thetay0)) + self._dLaserRadiator
+                            )
+                        )
         ret = minimize(minz, x0=self._dLaserRadiator)
         
         # Record the intersection point
@@ -260,7 +298,7 @@ class RayTrace():
         #         + self._dLaserRadiator)
         # # While within the aerogel
         while ( current_loc[2] < 
-                self.getFrontSurface(current_loc[0], current_loc[1]) 
+                self.frameThickness[0] - self.getFrontSurface(current_loc[0], current_loc[1]) 
                 + self.getThickness(current_loc[0], current_loc[1]) 
                 + self._dLaserRadiator
                 ):
@@ -324,8 +362,10 @@ class RayTrace():
         ####################################################################################        
         #                   Step 7: Propagate to the imaging plane
         ####################################################################################
-        delz = self._dRadiatorImage + np.mean(self.getThickness(np.linspace(0,100), 0)) + self._dLaserRadiator - points[-1][2]
-        delz +=  np.mean(self.getPoly(np.linspace(0,100), np.linspace(0,100), self.surfFront))
+        # Total distance travelled - current distance
+        # Default frame thickness as it is using the craddle
+        delz = (self._dRadiatorImage + 12 + self._dLaserRadiator) - points[-1][2]
+        # delz +=  np.mean(self.getPoly(np.linspace(0,100), np.linspace(0,100), self.surfFront))
         print ("Final Angles of Refraction (%0.2f, %0.2f)" %(np.rad2deg(theta_xf), np.rad2deg(theta_yf)))
         xi += delz * np.tan(theta_xf)
         yi += delz * np.tan(theta_yf)
