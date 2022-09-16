@@ -16,11 +16,11 @@ def analyzeFile(upName, dnName, tileName, frameUp = None, frameDn = None, outdir
 if __name__ == "__main__":
     
 
-    upName = "/mnt/raid1/HELIX_Data/Aerogel/TRIUMF/200220/data/gel_sorted_{tile:d}_up.dat"
-    dnName = "/mnt/raid1/HELIX_Data/Aerogel/TRIUMF/200220/data/gel_sorted_{tile:d}_dn.dat"
-    dnName = "/mnt/raid1/HELIX_Data/Aerogel/TRIUMF/200220/data/gel_sorted_{tile:d}_dn.dat"
-    frameUp = "/mnt/raid1/HELIX_Data/Aerogel/TRIUMF/200220/data/alu-up-{tile:d}.dat"
-    frameDn = "/mnt/raid1/HELIX_Data/Aerogel/TRIUMF/200220/data/alu-dn-{tile:d}.dat"
+    upName = "TRIUMF/200220/data/gel_sorted_{tile:d}_up.dat"
+    dnName = "TRIUMF/200220/data/gel_sorted_{tile:d}_dn.dat"
+    dnName = "TRIUMF/200220/data/gel_sorted_{tile:d}_dn.dat"
+    frameUp = "TRIUMF/200220/data/alu-up-{tile:d}.dat"
+    frameDn = "TRIUMF/200220/data/alu-dn-{tile:d}.dat"
 
     for i in range(30):
 

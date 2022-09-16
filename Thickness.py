@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 from matplotlib.backends.backend_pdf import PdfPages
 from astropy.io import fits
+import cmasher as cms
+cmap = cms.fusion
 
 class Thickness():
 
@@ -194,9 +196,9 @@ class Thickness():
         vmax = 1.01 * np.max((self.zUp, self.zDn))
 
         # Upper rows surface maps and measurements
-        # p0 = axs[0,0].pcolormesh(self.xx,self.yy, self.getPoly(self.xx,self.yy, self.parmsUp), vmin = vmin, vmax = vmax)
-        p0 = axs[0,0].scatter(self.xUp, self.yUp, c=self.zUp, vmin = vmin, vmax = vmax, edgecolors='black')
-        p1 = axs[0,1].scatter(self.xDn, self.yDn, c=self.zDn, vmin = vmin, vmax = vmax, edgecolors='black')
+        # p0 = axs[0,0].pcolormesh(self.xx,self.yy, self.getPoly(self.xx,self.yy, self.parmsUp), vmin = vmin, vmax = vmax, cmap = cmap)
+        p0 = axs[0,0].scatter(self.xUp, self.yUp, c=self.zUp, vmin = vmin, vmax = vmax, edgecolors='black', cmap = cmap)
+        p1 = axs[0,1].scatter(self.xDn, self.yDn, c=self.zDn, vmin = vmin, vmax = vmax, edgecolors='black', cmap = cmap)
 
         fig.colorbar(p0, ax=axs[0,0])
         fig.colorbar(p1, ax=axs[0,1])
@@ -235,12 +237,12 @@ class Thickness():
 
 
         # Upper rows surface maps and measurements
-        p0 = axs[0,0].pcolormesh(self.xx,self.yy, self.getPoly(self.xx,self.yy, self.parmsUp), vmin = vmin, vmax = vmax)
-        axs[0,0].scatter(self.xUp, self.yUp, c=self.zUp, vmin = vmin, vmax = vmax, edgecolors='black')
+        p0 = axs[0,0].pcolormesh(self.xx,self.yy, self.getPoly(self.xx,self.yy, self.parmsUp), vmin = vmin, vmax = vmax, cmap = cmap)
+        axs[0,0].scatter(self.xUp, self.yUp, c=self.zUp, vmin = vmin, vmax = vmax, edgecolors='black', cmap = cmap)
 
 
-        p1 = axs[0,1].pcolormesh(self.xx,self.yy, self.getPoly(self.xx,self.yy, self.parmsDn), vmin = vmin, vmax = vmax)
-        axs[0,1].scatter(self.xDn, self.yDn, c=self.zDn, vmin = vmin, vmax = vmax, edgecolors='black')
+        p1 = axs[0,1].pcolormesh(self.xx,self.yy, self.getPoly(self.xx,self.yy, self.parmsDn), vmin = vmin, vmax = vmax, cmap = cmap)
+        axs[0,1].scatter(self.xDn, self.yDn, c=self.zDn, vmin = vmin, vmax = vmax, edgecolors='black', cmap = cmap)
 
 
         self.resUp = self.zUp - self.getPoly(self.xUp, self.yUp, self.parmsUp)
@@ -308,6 +310,25 @@ class Thickness():
         return fig
 
 
+    def getThicknessPlot(self):
+        fig, axs = plt.subplots(1,2, figsize=(16,8))
+
+        thickness = self.getThickness(self.xx,self.yy)
+        vmin = 0.99 * np.min(thickness)
+        vmax = 1.01 * np.max(thickness)
+        
+        p0 = axs[0].pcolormesh(self.xx,self.yy, thickness, vmin = vmin, vmax = vmax, cmap = cmap)
+        fig.colorbar(p0, ax=axs[0], label = "Thickness [mm]")
+        axs[0].set_ylabel("distance to Centre")
+        axs[0].set_xlabel("distance to Centre")
+
+        axs[1].hist(thickness.ravel())
+        axs[1].set_xlabel("Thickness [mm]")
+
+        fig.tight_layout()
+        return fig
+
+
     def makeSummary(self, fname, tilename = "None"):
         if fname[-3:] != "pdf":
             fname += ".pdf"
@@ -360,6 +381,13 @@ Mean Tile thickness: {tileThick:0.2f} $\pm$ {tileThick_err:0.2f} mm
                 fig_dn = self.getSlicePlot("dn")
                 pdf.savefig(fig_dn)
                 plt.close(fig_dn)
+
+
+                # thickness
+                fig_thick = self.getThicknessPlot()
+                pdf.savefig(fig_thick)
+                plt.close(fig_thick)
+
 
 
 
