@@ -380,6 +380,7 @@ class RayTrace():
     '''
     def propagateLaserNoDebug(self, x0, y0, thetax0, thetay0):
         
+        
         points = []
         angles = []
 
@@ -411,7 +412,13 @@ class RayTrace():
         ####################################################################################
         
         # Find the intersection with the surface
-        minz = lambda z: np.abs(z - (self.getPoly(xi + z*np.tan(thetax0), yi + z*np.tan(thetay0), self.surfFront) + self._dLaserRadiator))
+        # Tile is "suspended" in the frame
+        minz = lambda z: np.abs(z - (
+                                self.frameThickness[0] - self.getFrontSurface(
+                                    xi + z*np.tan(thetax0), 
+                                    yi + z*np.tan(thetay0)) + self._dLaserRadiator
+                            )
+                        )
         ret = minimize(minz, x0=self._dLaserRadiator)
         
         # Record the intersection point
@@ -431,6 +438,7 @@ class RayTrace():
         # Get the angle to the normal
         theta_xi = self.getAngleVector([vec_i[0], 0, vec_i[2]], nhat)  # wrt x-z plane
         theta_yi = self.getAngleVector([0, vec_i[1], vec_i[2]], nhat)  # wrt y-z plane
+        # print ("Angle between line and surface (x): ", np.deg2rad(theta_xi))
 
         # Apply Snell's law at the surface
         ni = 1.0003
@@ -438,6 +446,7 @@ class RayTrace():
 
         theta_xf = self.getSnellsLaw(ni, nf, theta_xi)
         theta_yf = self.getSnellsLaw(ni, nf, theta_yi)
+        # print ("Refracted Angle between at surface (x): ", np.deg2rad(theta_xf))
 
         angles.append([theta_xf, theta_yf])
 
@@ -448,6 +457,7 @@ class RayTrace():
         # Get angle between surface and the downstream (z) direction
         theta_xn = self.getAngleVector([nhat[0], nhat[1], nhat[2]], [0, 0, 1]) # wrt x-z plane
         theta_yn = self.getAngleVector([nhat[0], nhat[1], nhat[2]], [0, 0, 1]) # wrt y-z plane
+        # print ("Angle between surface and x-z place: ", np.deg2rad(theta_xn))
 
         # move one step
         xi = x_inter + self._zStep * np.tan(theta_xf + theta_xn)
@@ -456,6 +466,8 @@ class RayTrace():
         points.append([xi,yi,zi])
 
         
+        # print ("Angles (x): ", np.rad2deg([theta_xf + theta_xn, theta_xn, theta_xf, theta_xi]))
+        # print ("Angles (y): ", np.rad2deg([theta_yf + theta_yn, theta_yn, theta_yf, theta_yi]))
 
 
         ## Angle of interest is with respect to x or y axis
@@ -473,9 +485,16 @@ class RayTrace():
         ####################################################################################
         current_loc = [xi, yi, zi]
 
-        # While within the aerogel
+        # print ("Point of intersection %0.2f, %0.2f, %0.2f" %(current_loc[0], current_loc[1], current_loc[2]))
+        # print ("Front Surface: %0.2f" %self.getFrontSurface(current_loc[0], current_loc[1]))
+        # print ("Thickness Surface: %0.2f" %self.getThickness(current_loc[0], current_loc[1]))
+        # print ("Distance to Radiator: %0.2f" %self._dLaserRadiator)
+        # print ("Angles at interface (%0.2f, %0.2f)" %(np.rad2deg(theta_xi), np.rad2deg(theta_yi)))
+        #         + self.getThickness(current_loc[0], current_loc[1]) 
+        #         + self._dLaserRadiator)
+        # # While within the aerogel
         while ( current_loc[2] < 
-                self.getFrontSurface(current_loc[0], current_loc[1]) 
+                self.frameThickness[0] - self.getFrontSurface(current_loc[0], current_loc[1]) 
                 + self.getThickness(current_loc[0], current_loc[1]) 
                 + self._dLaserRadiator
                 ):
@@ -539,9 +558,11 @@ class RayTrace():
         ####################################################################################        
         #                   Step 7: Propagate to the imaging plane
         ####################################################################################
-        delz = self._dRadiatorImage + np.mean(self.getThickness(np.linspace(0,100), 0)) + self._dLaserRadiator - points[-1][2]
-        delz +=  np.mean(self.getPoly(np.linspace(0,100), np.linspace(0,100), self.surfFront))
-
+        # Total distance travelled - current distance
+        # Default frame thickness as it is using the craddle
+        delz = (self._dRadiatorImage + 12 + self._dLaserRadiator) - points[-1][2]
+        # delz +=  np.mean(self.getPoly(np.linspace(0,100), np.linspace(0,100), self.surfFront))
+        # print ("Final Angles of Refraction (%0.2f, %0.2f)" %(np.rad2deg(theta_xf), np.rad2deg(theta_yf)))
         xi += delz * np.tan(theta_xf)
         yi += delz * np.tan(theta_yf)
         zi += delz
@@ -549,7 +570,6 @@ class RayTrace():
         points.append([xi,yi,zi])
 
         return np.array(points)
-
 
     # Return the location of the point on the screen for a given index map
     def getProjection(self, indexMap, x0, y0, thetax0, thetay0, xtile, ytile):
