@@ -139,6 +139,11 @@ class Gradient():
                     print ("Error Processing:")
                     print (self.stem.format(h = self.h[i], v = self.v[j]))
 
+                except FileNotFoundError:
+                    print ("File Not Found: ")
+                    print (self.stem.format(h = self.h[i], v = self.v[j]))
+
+
 
 
 
