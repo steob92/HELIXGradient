@@ -161,6 +161,34 @@
     }
 
 
+    // Set up the radiator. Shape, thinkness and refractive index
+    void CRayTrace::setRadiator( vector <float> surfFront, vector <float> surfBack, vector <float> indexMap, vector <float> frameThickness)
+    {
+        if (fSurfaceFront) {delete fSurfaceFront;}
+        fSurfaceFront = new float[surfFront.size()];
+
+        
+        if (fSurfaceBack) {delete fSurfaceBack;}
+        fSurfaceBack = new float[surfFront.size()];
+        // Apply rotation
+        multiplyParms(fSurfaceBack, fInverseX);
+
+        if (fIndexMap) {delete fIndexMap;}
+        fIndexMap = new float[surfFront.size()];
+
+        if (fFrameThickness) {delete fFrameThickness;}
+        fFrameThickness = new float[surfFront.size()];
+
+        for (int i = 0; i < surfFront.size(); i++)
+        {
+            fSurfaceFront[i] = surfFront[i];
+            fSurfaceBack[i] = surfBack[i];
+            fIndexMap[i] = indexMap[i];
+            fFrameThickness[i] = frameThickness[i];
+        }
+    }
+
+
     // Multiple one vector/array by an other
     void CRayTrace::multiplyParms(float *a, float *b, int n)
     {
@@ -171,6 +199,44 @@
     }
 
 
+    // Return only the final point
+    vector <float> CRayTrace::getProjection(float *indexMap, float x0, float y0, float thetax0, float thetay0, float xtile, float ytile)
+    {
+        fXTile = xtile;
+        fYTile = ytile;
+        vector <vector <float> > ivec = propagateLaser(  x0, y0, thetax0, thetay0);
+        return ivec[ivec.size()-1];
+    }
+
+
+    // Analyze the entire tile (19 x 19 x 2)
+    vector <vector <vector <float> > >  CRayTrace::analyzeTile(float *indexMap, float x0, float y0, float thetax0, float thetay0)
+    {
+        vector <vector <vector <float> > > data (19, vector < vector <float> >(19, vector <float>(2)));
+
+        vector <float> ivec;
+        for (int i = 0; i < 19 ; i++)
+        {
+            for (int j = 0; j <19 ; j++)
+            {
+                ivec = getProjection(indexMap, x0, y0, thetax0, thetay0, 5+i*5, 5+j*5);
+                data[i][j][0] = ivec[0];
+                data[i][j][1] = ivec[1];
+            }
+        }
+
+        return data;
+    }
+
+
+    // Analyze the entire tile (19 x 19 x 2)
+    vector <vector <vector <float> > >  CRayTrace::analyzeTile(vector <float> indexMap, float x0, float y0, float thetax0, float thetay0)
+    {
+        // Pass reference to the 0-th entry
+         return analyzeTile( &(indexMap[0]), x0, y0, thetax0, thetay0);
+    }
+
+    
     vector <vector <float> > CRayTrace::propagateLaser( float x0, float y0, float thetax0, float thetay0)
     {
         vector <vector <float> > points(0, vector <float>(3));
@@ -521,4 +587,40 @@
         gsl_min_fminimizer_free (s);
 
         return m;
+    }
+
+    void CRayTrace::loadGradientData(
+            vector < vector<float> > xdata, 
+            vector < vector<float> > ydata, 
+            vector < vector<float> > xdataerr, 
+            vector < vector<float> > ydataerr
+                                )
+        {
+            fXData = xdata;
+            fYData = ydata;
+            fXDataErr = xdataerr;
+            fYDataErr = ydataerr;
+        }
+
+    float CRayTrace::getChi2(vector <float> indexMap, float x0, float y0, float thetax0, float thetay0)
+    {
+        return getChi2( &(indexMap[0]),  x0,  y0,  thetax0,  thetay0);
+    }
+        
+    float CRayTrace::getChi2(float *indexMap, float x0, float y0, float thetax0, float thetay0)
+    {
+
+        float chi2 = 0;
+        vector <vector <vector <float> > > data = analyzeTile(indexMap, x0, y0, thetax0, thetay0);
+        for (int i = 0; i < data.size(); i ++ )
+        {
+            for (int j = 0; j < data[0].size(); j++)
+            {
+
+                if (fXDataErr[i][j] *fYDataErr[i][j] == 0 ){continue;}
+                chi2 += (fXData[i][j] - x0 - data[i][j][0]) * (fXData[i][j] - x0 - data[i][j][0]) / fXDataErr[i][j] / fXDataErr[i][j] / fXDataErr[i][j];
+                chi2 += (fYData[i][j] - y0 - data[i][j][1]) * (fYData[i][j] - y0 - data[i][j][1]) / fYDataErr[i][j] / fYDataErr[i][j] / fYDataErr[i][j];
+            }
+        }
+        return chi2;
     }

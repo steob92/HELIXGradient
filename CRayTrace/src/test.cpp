@@ -28,21 +28,29 @@ int main()
 
     myRay.setDebug(false);
 
-    for (int i = 0; i < 19; i ++)
-    {
-        for (int i = 0; i < 19; i ++)
-        {
-            vector <vector<float> > ipoints = myRay.propagateLaser(x0, y0, thetax0, thetay0);
-        }
-        
-    }
-    
-    cout << points[points.size()-1][0] << " " << points[points.size()-1][1] << " "<< points[points.size()-1][2] << endl; 
-    cout << tan(0) << " " << tan(M_PI/2) << " " << isnan(tan(M_PI/2)) << endl;
-    cout << atan(0) << " " << atan(M_PI/2) << " " << isnan(atan(M_PI/2)) << endl;
-    cout << sin(0) << " " << sin(M_PI/2) << " " << isnan(sin(M_PI/2)) << endl;
-    cout << asin(0) << " " << asin(M_PI/2) << " " << isnan(asin(M_PI/2)) << endl;
 
+    vector < vector < vector <float> > > data = myRay.analyzeTile(indexMap, x0, y0, thetax0, thetay0);
+    cout << data.size() << " " << data[0].size() << " " << data[0][0].size() << endl;
+    cout << data.size() << " " << data[0][0][0] << " " << data[0][0][1] << endl;
+    cout << data.size() << " " << data[data.size()-1][data[0].size()-1][0] << " " << data[data.size()-1][data[0].size()-1][1] << endl;
+    cout << data.size() << " " << data[data.size()-5][data[0].size()-5][0] << " " << data[data.size()-5][data[0].size()-5][1] << endl;
+
+    myRay.fXTile = 0;
+    myRay.fYTile = 0;
+    CRayTrace *myRay2 = myRay.clone();
+    cout << myRay.getIndex(55,55) << " " << myRay2.getIndex(55,55) << endl;
+    myRay2.fXTile = 5;
+    myRay2.fYTile = 5;
+    cout << myRay.getIndex(55,55) << " " << myRay2.getIndex(55,55) << endl;
+    // for (int i = 0; i < data[0].size(); i ++)
+    // {
+    //     printf("%d/%d", i, 0);
+    //      for (int j = 0; j < data[0].size(); j ++)
+    //     {
+    //         printf("\t%0.1f/%0.1f", data[i][j][0], data[i][j][1]);
+    //     }   
+    //     printf("\n");
+    // }
 
     return 0;
 }
