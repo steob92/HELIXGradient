@@ -24,7 +24,7 @@ int main()
     float x0 = 0, y0 = 0;
     float thetax0 = 10 * M_PI/180, thetay0 = 0* M_PI/180;
     
-    vector <vector<float> > points = myRay.propagateLaser(x0, y0, thetax0, thetay0);
+    vector <vector<float> > points = myRay.propagateLaser(x0, y0, thetax0, thetay0, 0,0);
 
     myRay.setDebug(false);
 
@@ -35,13 +35,35 @@ int main()
     cout << data.size() << " " << data[data.size()-1][data[0].size()-1][0] << " " << data[data.size()-1][data[0].size()-1][1] << endl;
     cout << data.size() << " " << data[data.size()-5][data[0].size()-5][0] << " " << data[data.size()-5][data[0].size()-5][1] << endl;
 
+
+    vector < vector<float> > xdata( data.size(), vector<float> (data[0].size(), 0));
+    vector < vector<float> > ydata( data.size(), vector<float> (data[0].size(), 0));
+    vector < vector<float> > xdataerr( data.size(), vector<float> (data[0].size(), 0));
+    vector < vector<float> > ydataerr( data.size(), vector<float> (data[0].size(), 0));
+
+    for (int i = 0; i < data.size(); i++)
+    {
+        for (int j = 0; j < data[0].size(); j++)
+        {
+            xdata[i][j] = data[i][j][0];
+            ydata[i][j] = data[i][j][1];
+        } 
+    }
+
+    myRay.loadGradientData( xdata,  ydata,  xdataerr,  ydataerr );
+
+
     myRay.fXTile = 0;
     myRay.fYTile = 0;
     CRayTrace *myRay2 = myRay.clone();
-    cout << myRay.getIndex(55,55) << " " << myRay2.getIndex(55,55) << endl;
-    myRay2.fXTile = 5;
-    myRay2.fYTile = 5;
-    cout << myRay.getIndex(55,55) << " " << myRay2.getIndex(55,55) << endl;
+    cout << myRay.getIndex(55,55, 0,0) << " " << myRay2->getIndex(55,55, 0,0) << endl;
+    cout << myRay.getIndex(55,55, 0,0) << " " << myRay2->getIndex(55,55, 0,0) << endl;
+
+    // myRay.setDebug(true);
+    cout << "Chi2 " << myRay.getChi2(indexMap, x0, y0, thetax0, thetay0) << endl;
+    // myRay.setDebug(false);
+    cout << "Chi2 " << myRay.getChi2C(indexMap, x0, y0, thetax0, thetay0) << endl;
+    cout << "Chi2 " << myRay.getChi2(indexMap, x0, y0, thetax0, thetay0) << endl;
     // for (int i = 0; i < data[0].size(); i ++)
     // {
     //     printf("%d/%d", i, 0);

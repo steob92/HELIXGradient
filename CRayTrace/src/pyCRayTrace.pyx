@@ -1,4 +1,3 @@
-
 # distutils: language = c++
 # distutils: sources = CRayTrace.h, CRayTrace.cpp
 # distutils: include_dirs = ./, ../inc/
@@ -12,6 +11,9 @@ import numpy as np
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp cimport bool
+from libc.string cimport memcpy
+
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 from cpython cimport array
 from copy import deepcopy
@@ -32,7 +34,11 @@ cdef class pyCRayTrace:
         self._CRayTrace = new CRayTrace()
 
     def __dealloc__(self):
-        del self._CRayTrace
+        # if (self._CRayTrace):
+        #     del self._CRayTrace
+        PyMem_Free(self._CRayTrace)
+        # del self._CRayTrace
+        # pass
 
     
     def __copy__(self):
@@ -182,6 +188,7 @@ cdef class pyCRayTrace:
         cdef float c_y0 = y0
         cdef float c_thetax0 = thetax0
         cdef float c_thetay0 = thetay0
+        print ("py propagateLaser")
         cdef vector [vector[float]] c_points = self._CRayTrace.propagateLaser( c_x0,  c_y0,  c_thetax0,  c_thetay0)
         points = np.zeros((c_points.size(), c_points[0].size()))
         for i in range(points.shape[0]):
@@ -305,30 +312,18 @@ cdef class pyCRayTrace:
         return self._CRayTrace.getChi2(c_params,c_x0, c_y0, c_xtheta0, c_ytheta0 )
 
 
-    # def call_chi2_mcmc(self, params, x0, y0, xtheta0, ytheta0):
-    #     obj_clone = self._CRayTrace
-    #     cdef vector [float] c_params
-    #     c_params.resize(len(params), 0)
-    #     cdef float c_x0 = x0
-    #     cdef float c_y0 = y0
-    #     cdef float c_xtheta0 = xtheta0
-    #     cdef float c_ytheta0 = ytheta0
+    cdef bytes get_data(self):
+        return <bytes>(<char *>self._CRayTrace)[:sizeof(CRayTrace)]
 
-    #     chi2 =  obj_clone.getChi2(c_params,c_x0, c_y0, c_xtheta0, c_ytheta0 )
-    #     # del obj_clone
-    #     return chi2
+    cdef void set_data(self, bytes data):
+        memcpy(self._CRayTrace, <char*>data, sizeof(CRayTrace))
 
 
-    # def call_chi2_mcmc(self, params, x0, y0, xtheta0, ytheta0):
-    #     # cpdef CRayTrace *obj_clone
-    #     cdef CRayTrace *obj_clone = new CRayTrace(self._CRayTrace)
-    #     cdef vector [float] c_params
-    #     c_params.resize(len(params), 0)
-    #     cdef float c_x0 = x0
-    #     cdef float c_y0 = y0
-    #     cdef float c_xtheta0 = xtheta0
-    #     cdef float c_ytheta0 = ytheta0
+    def __reduce__(self):
+        data = self.get_data()
+        return (rebuild, (data,))
 
-    #     chi2 =  obj_clone.getChi2(c_params,c_x0, c_y0, c_xtheta0, c_ytheta0 )
-    #     # del obj_clone
-    #     return chi2
+cpdef object rebuild(bytes data):
+    c = pyCRayTrace()
+    c.set_data(data)
+    return c

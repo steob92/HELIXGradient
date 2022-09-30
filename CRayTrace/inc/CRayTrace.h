@@ -26,8 +26,8 @@ class CRayTrace
 
         void setDebug(bool debug);
         
-        float getPoly(float x, float y, float *parms );
-        float *getSurfaceNormal(float x, float y, float *parms);
+        float getPoly(float x, float y, float *parms, float xtile = -999, float ytile = -999);
+        float *getSurfaceNormal(float x, float y, float *parms, float xtile = -999, float ytile = -999);
         float getSnellsLaw(float n1, float n2, float theta1);
         float getAngleVector(float *a, float *b, int n = 3);
         void loadRadiator(float *upper, float *lower);
@@ -38,15 +38,18 @@ class CRayTrace
 
         void setGeometry( float dLaserRadiator = 202, float dRadiatorImage = 85);
 
-        float getIndex(float x, float y);
-        float getThickness(float x, float y);
-        float getFrontSurface(float x, float y);
-        float getBackSurface(float x, float y);
+        float getIndex(float *indexMap, float x, float y, float xtile = -999, float ytile = -999);
+        float getIndex(float x, float y, float xtile = -999, float ytile = -999);
+        float getThickness(float x, float y, float xtile = -999, float ytile = -999);
+        float getFrontSurface(float x, float y, float xtile = -999, float ytile = -999);
+        float getBackSurface(float x, float y, float xtile = -999, float ytile = -999);
 
-        vector <vector <float> > propagateLaser( float x0, float y0, float thetax0, float thetay0);
+        vector <vector <float> > propagateLaser( float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
+        vector <vector <float> > propagateLaser( float* indexMap, float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
+
         // void propagateLaserNoDebug( float x0, float y0, float thetax0, float thetay0, float *px, float *py, float *pz);
 
-        vector <float> getProjection(float *indexMap, float x0, float y0, float thetax0, float thetay0, float xtile, float ytile);
+        vector <float> getProjection(float *indexMap, float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
         double fcnToMinimize(double z);
         static double fcnToMinimize_wrapper(double x, void *params)
         {
@@ -92,6 +95,9 @@ class CRayTrace
             return static_cast<CRayTrace*>(this);
         }
 
+        float getChi2C(float *indexMap, float x0, float y0, float thetax0, float thetay0);
+
+
     private:
         void multiplyParms(float *a, float *b, int n = 9);
 
@@ -113,8 +119,10 @@ class CRayTrace
         float fMZthetay0;
         float fMZxi;
         float fMZyi;
+        float fMXtile;
+        float fMYtile;
 
-        float getIntersection( float thetax0, float thetay0, float xi, float yi);
+        float getIntersection( float thetax0, float thetay0, float xi, float yi, float xtile = -999, float ytile = -999);
 
 
 

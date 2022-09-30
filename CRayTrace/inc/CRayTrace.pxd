@@ -24,9 +24,9 @@ cdef extern from "CRayTrace.cpp":
             vector [vector[float]] fXData, fYData, fXDataErr, fYDataErr
 
             # Generic Polynomial function (needed?)
-            float getPoly(float x, float y, float *parms )
+            float getPoly(float x, float y, float *parms , float xtile, float ytile)
             # Return the vector normal to the surface
-            float *getSurfaceNormal(float x, float y, float *parms)
+            float *getSurfaceNormal(float x, float y, float *parms, float xtile, float ytile)
             # Simple Snell's Law
             float getSnellsLaw(float n1, float n2, float theta1)
             # Getting the angle between two vectors
@@ -37,16 +37,17 @@ cdef extern from "CRayTrace.cpp":
             void setGeometry( float dLaserRadiator, float dRadiatorImage)
 
             # Get the spectral index at a point (x,y)
-            float getIndex(float x, float y)
+            float getIndex(float x, float y, float xtile = -999, float ytile = -999)
             # Get the thickness at a point (x,y)
-            float getThickness(float x, float y)
+            float getThickness(float x, float y, float xtile = -999, float ytile = -999)
             # Get front surface at a point (x,y)
-            float getFrontSurface(float x, float y)
+            float getFrontSurface(float x, float y, float xtile = -999, float ytile = -999)
             # Get back surface at a point (x,y)
-            float getBackSurface(float x, float y)
+            float getBackSurface(float x, float y, float xtile = -999, float ytile = -999)
 
             # Return recorded points of the propagated laser
-            vector[vector[float]] propagateLaser( float x0, float y0, float thetax0, float thetay0)
+            vector[vector[float]] propagateLaser( float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999)
+            vector[vector[float]] propagateLaser( float* indexMap, float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999)
             # Is this needed?
             # This will return only the final point of the projected laser
             void getProjection(float *indexMap, float x0, float y0, float thetax0, float thetay0, float xtile, float ytile, float &xproj, float &yproj)

@@ -25,13 +25,13 @@
     {
         // Delete things...
         // cout << "fIndexMap" << endl;
-        // if (fIndexMap) {delete fIndexMap;}
+        if (fIndexMap) {delete fIndexMap;}
         // cout << "fSurfaceFront" << endl;
-        // if (fSurfaceFront) {delete fSurfaceFront;}
+        if (fSurfaceFront) {delete fSurfaceFront;}
         // cout << "fSurfaceBack" << endl;
-        // if (fSurfaceBack) {delete fSurfaceBack;}
+        if (fSurfaceBack) {delete fSurfaceBack;}
         // cout << "fFrameThickness" << endl;
-        // if (fFrameThickness) {delete fFrameThickness;}
+        if (fFrameThickness) {delete fFrameThickness;}
 
     }
 
@@ -41,11 +41,15 @@
     }
 
     // Generic Polynomial used for surface maps
-    float CRayTrace::getPoly(float x, float y, float *parms )
+    float CRayTrace::getPoly(float x, float y, float *parms, float xtile, float ytile )
     {
+
+        if ( abs(xtile - 999) < 0.1) {xtile = fXTile;}
+        if ( abs(ytile - 999) < 0.1) {ytile = fYTile;}
+        
         // Offset to the corerct location
-        x = x -45 + fXTile;
-        y = y -45 + fYTile;
+        x = x -45 + xtile;
+        y = y -45 + ytile;
 
         float ret = parms[0] + parms[1]*x + parms[2]*x*x + parms[3]*y; 
         ret += parms[4]*y*y + parms[5]*x*y +parms[6]*x*x*y + parms[7]*x*y*y +parms[8]*x*x*y*y;
@@ -54,15 +58,17 @@
 
 
     // Getting the normal to a surface (n = dS/da)
-    float * CRayTrace::getSurfaceNormal(float x, float y, float *parms)
+    float * CRayTrace::getSurfaceNormal(float x, float y, float *parms, float xtile, float ytile)
     {   
         
         float *normal = new float[3];
+        if ( abs(xtile - 999) < 0.1) {xtile = fXTile;}
+        if ( abs(ytile - 999) < 0.1) {ytile = fYTile;}
 
         // Because centre is defined as 0,0 npt 45,45
         // Also offset by the location of the tile
-        x = x -45 + fXTile; 
-        y = y -45 + fYTile; 
+        x = x -45 + xtile; 
+        y = y -45 + ytile; 
 
         // dsdx
 
@@ -118,74 +124,68 @@
     }
 
     // Get Refractive index at point (x,y)
-    float CRayTrace::getIndex(float x, float y)
+    float CRayTrace::getIndex(float x, float y, float xtile, float ytile)
     {
-        return getPoly(x,y, fIndexMap);
+        return getPoly(x,y, fIndexMap, xtile, ytile);
+    }
+
+    // Get Refractive index at point (x,y)
+    float CRayTrace::getIndex(float *indexMap, float x, float y, float xtile, float ytile)
+    {
+        return getPoly(x,y, indexMap, xtile, ytile);
     }
 
     // Get the location of the front surface at point (x,y)
-    float CRayTrace::getFrontSurface(float x, float y)
+    float CRayTrace::getFrontSurface(float x, float y, float xtile, float ytile)
     {
-        return getPoly(x,y, fSurfaceFront);
+        return getPoly(x,y, fSurfaceFront, xtile, ytile);
     }
 
     // Get the location of the back surface at point (x,y)
-    float CRayTrace::getBackSurface(float x, float y)
+    float CRayTrace::getBackSurface(float x, float y, float xtile, float ytile)
     {
-        return getPoly(x,y, fSurfaceBack);
+        return getPoly(x,y, fSurfaceBack, xtile, ytile);
     }
 
     // Get the thickness of the tile at point (x,y)
-    float CRayTrace::getThickness(float x, float y)
+    float CRayTrace::getThickness(float x, float y, float xtile, float ytile)
     {
-        return getFrontSurface(x, y) + getBackSurface(x, y) - fFrameThickness[0];
+        return getFrontSurface(x, y, xtile, ytile) + getBackSurface(x, y, xtile, ytile) - fFrameThickness[0];
     }
 
     // Set up the radiator. Shape, thinkness and refractive index
     void CRayTrace::setRadiator( float *surfFront, float *surfBack, float *indexMap, float *frameThickness)
     {
         if (fSurfaceFront) {delete fSurfaceFront;}
-        fSurfaceFront = surfFront;
-
+        fSurfaceFront = new float[9];
         
         if (fSurfaceBack) {delete fSurfaceBack;}
-        fSurfaceBack = surfBack;
-        // Apply rotation
-        multiplyParms(fSurfaceBack, fInverseX);
+        fSurfaceBack = new float[9];
 
         if (fIndexMap) {delete fIndexMap;}
-        fIndexMap = indexMap;
+        fIndexMap = new float[9];
 
         if (fFrameThickness) {delete fFrameThickness;}
-        fFrameThickness = frameThickness;
-    }
+        fFrameThickness = new float[9];
 
-
-    // Set up the radiator. Shape, thinkness and refractive index
-    void CRayTrace::setRadiator( vector <float> surfFront, vector <float> surfBack, vector <float> indexMap, vector <float> frameThickness)
-    {
-        if (fSurfaceFront) {delete fSurfaceFront;}
-        fSurfaceFront = new float[surfFront.size()];
-
-        
-        if (fSurfaceBack) {delete fSurfaceBack;}
-        fSurfaceBack = new float[surfFront.size()];
-        // Apply rotation
-        multiplyParms(fSurfaceBack, fInverseX);
-
-        if (fIndexMap) {delete fIndexMap;}
-        fIndexMap = new float[surfFront.size()];
-
-        if (fFrameThickness) {delete fFrameThickness;}
-        fFrameThickness = new float[surfFront.size()];
-
-        for (int i = 0; i < surfFront.size(); i++)
+        for (int i = 0 ; i < 9; i++)
         {
             fSurfaceFront[i] = surfFront[i];
             fSurfaceBack[i] = surfBack[i];
             fIndexMap[i] = indexMap[i];
             fFrameThickness[i] = frameThickness[i];
         }
+        // Apply rotation
+        multiplyParms(fSurfaceBack, fInverseX);
+
+    }
+
+
+    // Set up the radiator. Shape, thinkness and refractive index
+    void CRayTrace::setRadiator( vector <float> surfFront, vector <float> surfBack, vector <float> indexMap, vector <float> frameThickness)
+    {
+        // Use inbuild to avoid bulk
+        setRadiator( &(surfFront[0]), &(surfBack[0]), &(indexMap[0]), &(frameThickness[0]));
     }
 
 
@@ -202,9 +202,13 @@
     // Return only the final point
     vector <float> CRayTrace::getProjection(float *indexMap, float x0, float y0, float thetax0, float thetay0, float xtile, float ytile)
     {
-        fXTile = xtile;
-        fYTile = ytile;
-        vector <vector <float> > ivec = propagateLaser(  x0, y0, thetax0, thetay0);
+        // fXTile = xtile;
+        // fYTile = ytile;
+        if (fDebug)
+        {
+            printf ("getProjection (%0.2f, %0.2f)\n",xtile, ytile);
+        }
+        vector <vector <float> > ivec = propagateLaser( indexMap, x0, y0, thetax0, thetay0, xtile, ytile);
         return ivec[ivec.size()-1];
     }
 
@@ -237,8 +241,20 @@
     }
 
     
-    vector <vector <float> > CRayTrace::propagateLaser( float x0, float y0, float thetax0, float thetay0)
+    vector <vector <float> > CRayTrace::propagateLaser(  float x0, float y0, float thetax0, float thetay0, float xtile, float ytile)
     {
+        return propagateLaser( fIndexMap, x0, y0, thetax0, thetay0, xtile, ytile);
+    }
+
+
+    vector <vector <float> > CRayTrace::propagateLaser( float* indexMap, float x0, float y0, float thetax0, float thetay0, float xtile, float ytile)
+    {
+
+        if (fDebug)
+        {
+            cout <<  x0 << " " <<   y0 << " " <<   thetax0 << " " <<   thetay0 << " " <<   xtile << " " <<   ytile << endl;
+            printf ("propagateLaser (%0.2f, %0.2f)\n",xtile, ytile);
+        }
         vector <vector <float> > points(0, vector <float>(3));
         float xi = x0;
         float yi = y0;
@@ -288,7 +304,8 @@
         {
             printf("Getting intersection...\n");
         }
-        float z_inter = getIntersection( thetax0, thetay0, xi, yi);
+
+        float z_inter = getIntersection( thetax0, thetay0, xi, yi, xtile, ytile);
 
         // Record the intersection point
         float x_inter = xi + z_inter * tan(thetax0);
@@ -315,7 +332,7 @@
             printf("Getting Normal to front surface at (%0.2f, %0.2f)...\n", x_inter, y_inter);
         }
 
-        nhat = getSurfaceNormal( x_inter, y_inter, fSurfaceFront);
+        nhat = getSurfaceNormal( x_inter, y_inter, fSurfaceFront, xtile, ytile);
         if (fDebug)
         {
             printf("\t Found normal at (%0.2f, %0.2f, %0.2f)\n", nhat[0], nhat[1], nhat[2]);
@@ -334,7 +351,7 @@
         }
         // Apply Snell's law at the surface
         float ni = 1.0003;
-        float nf = getIndex(x_inter,y_inter);
+        float nf = getIndex(indexMap, x_inter,y_inter, xtile, ytile);
 
         float theta_xf = getSnellsLaw(ni, nf, theta_xi);
         float theta_yf = getSnellsLaw(ni, nf, theta_yi);
@@ -394,8 +411,8 @@
         // #         + _dLaserRadiator)
         // # # While within the aerogel
         while ( current_loc[2] < 
-                fFrameThickness[0] - getFrontSurface(current_loc[0], current_loc[1]) 
-                + getThickness(current_loc[0], current_loc[1]) 
+                fFrameThickness[0] - getFrontSurface(current_loc[0], current_loc[1], xtile, ytile) 
+                + getThickness(current_loc[0], current_loc[1], xtile, ytile) 
                 + fdLaserRadiator
                 )
         {
@@ -418,7 +435,7 @@
             current_loc[2] = zi;
 
             // get the refractive index at location
-            nf = getIndex(xi, yi);
+            nf = getIndex(indexMap, xi, yi, xtile, ytile);
 
             // Snells's law
             // Try/except catches 90 degrees
@@ -445,7 +462,7 @@
             printf("Getting Normal to bacl surface at (%0.2f, %0.2f)...\n", xi, yi);
         }
 
-        nhat = getSurfaceNormal( xi, yi, fSurfaceBack);
+        nhat = getSurfaceNormal( xi, yi, fSurfaceBack, xtile, ytile);
 
         if (fDebug)
         {
@@ -527,7 +544,7 @@
         float x = fMZxi + z * tan(fMZthetax0);
         float y = fMZyi + z * tan(fMZthetay0);
         
-        double ret = fFrameThickness[0] - getFrontSurface(x,y) + fdLaserRadiator;
+        double ret = fFrameThickness[0] - getFrontSurface(x,y, fMXtile, fMYtile) + fdLaserRadiator;
         ret = z - ret;
         return abs(ret);
     }
@@ -535,13 +552,24 @@
 
 
     // Function to find the interesection between a point and the surface
-    float CRayTrace::getIntersection( float thetax0, float thetay0, float xi, float yi)
+    float CRayTrace::getIntersection( float thetax0, float thetay0, float xi, float yi, float xtile, float ytile)
     {
+
+
+        if ( abs(xtile - 999) < 0.1) {xtile = fXTile;}
+        if ( abs(ytile - 999) < 0.1) {ytile = fYTile;}
+
+        if (fDebug)
+        {
+            printf ("\tgetIntersection (%0.2f, %0.2f)\n",xtile, ytile);
+        }
 
         fMZthetax0 = thetax0;
         fMZthetay0 = thetay0;
         fMZxi = xi;
         fMZyi = yi;
+        fMXtile = xtile;
+        fMYtile = ytile;
 
         int status;
         int iter = 0, max_iter = 100;
@@ -612,15 +640,29 @@
 
         float chi2 = 0;
         vector <vector <vector <float> > > data = analyzeTile(indexMap, x0, y0, thetax0, thetay0);
+        float xproj0, yproj0;
+        // Calculate where laser would interesct the imaging plane
+        xproj0 = x0 + (fdLaserRadiator + fdRadiatorImage + fFrameThickness[0])*tan(thetax0);
+        yproj0 = y0 + (fdLaserRadiator + fdRadiatorImage + fFrameThickness[0])*tan(thetay0);
+        
         for (int i = 0; i < data.size(); i ++ )
         {
             for (int j = 0; j < data[0].size(); j++)
             {
-
                 if (fXDataErr[i][j] *fYDataErr[i][j] == 0 ){continue;}
-                chi2 += (fXData[i][j] - x0 - data[i][j][0]) * (fXData[i][j] - x0 - data[i][j][0]) / fXDataErr[i][j] / fXDataErr[i][j] / fXDataErr[i][j];
-                chi2 += (fYData[i][j] - y0 - data[i][j][1]) * (fYData[i][j] - y0 - data[i][j][1]) / fYDataErr[i][j] / fYDataErr[i][j] / fYDataErr[i][j];
+                chi2 += (fXData[i][j] - xproj0 - data[i][j][0]) * (fXData[i][j] - xproj0 - data[i][j][0]) / fXDataErr[i][j] / fXDataErr[i][j] / fXDataErr[i][j];
+                chi2 += (fYData[i][j] - yproj0 - data[i][j][1]) * (fYData[i][j] - yproj0 - data[i][j][1]) / fYDataErr[i][j] / fYDataErr[i][j] / fYDataErr[i][j];
             }
         }
         return chi2;
     }
+
+
+    float CRayTrace::getChi2C(float *indexMap, float x0, float y0, float thetax0, float thetay0)
+    {
+        CRayTrace *obj_clo = this->clone();
+        float chi2 = obj_clo->getChi2( indexMap,  x0,  y0,  thetax0,  thetay0);
+        // delete obj_clo;
+        return chi2;
+    }
+
