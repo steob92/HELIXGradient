@@ -67,5 +67,7 @@ cdef extern from "CRayTrace.cpp":
 
 
             float getChi2(vector [float] indexMap, float x0, float y0, float thetax0, float thetay0)
-
+            float fdLaserRadiator;
+            float fdRadiatorImage;
+            float *fFrameThickness;
             CRayTrace clone();

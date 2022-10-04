@@ -13,6 +13,10 @@
 // #include "TMath.h"
 
 #pragma once
+
+#ifndef CRAYTRACE_H_
+#define CRAYTRACE_H_
+
 using namespace std;
 
 
@@ -38,19 +42,20 @@ class CRayTrace
 
         void setGeometry( float dLaserRadiator = 202, float dRadiatorImage = 85);
 
-        float getIndex(float *indexMap, float x, float y, float xtile = -999, float ytile = -999);
+        float getIndex(vector <float> indexMap, float x, float y, float xtile = -999, float ytile = -999);
         float getIndex(float x, float y, float xtile = -999, float ytile = -999);
         float getThickness(float x, float y, float xtile = -999, float ytile = -999);
         float getFrontSurface(float x, float y, float xtile = -999, float ytile = -999);
         float getBackSurface(float x, float y, float xtile = -999, float ytile = -999);
 
         vector <vector <float> > propagateLaser( float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
-        vector <vector <float> > propagateLaser( float* indexMap, float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
+        vector <vector <float> > propagateLaser( vector <float> indexMap, float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
+        vector <vector <float> > propagateLaser( float *indexMap, float x0, float y0, float thetax0, float thetay0, float xtile, float ytile);
 
         // void propagateLaserNoDebug( float x0, float y0, float thetax0, float thetay0, float *px, float *py, float *pz);
 
-        vector <float> getProjection(float *indexMap, float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
-        double fcnToMinimize(double z);
+        vector <float> getProjection(vector <float> indexMap, float x0, float y0, float thetax0, float thetay0, float xtile = -999, float ytile = -999);
+        float fcnToMinimize(float z);
         static double fcnToMinimize_wrapper(double x, void *params)
         {
             return static_cast<CRayTrace*>(params)->fcnToMinimize(x);
@@ -72,7 +77,9 @@ class CRayTrace
         // Geometry setup
         float fdLaserRadiator;
         float fdRadiatorImage;
-        
+        float *fFrameThickness;
+
+
         // Debug information?
         bool fDebug;
 
@@ -111,7 +118,6 @@ class CRayTrace
         float *fIndexMap;
         float *fSurfaceFront;
         float *fSurfaceBack;
-        float *fFrameThickness;
 
 
         // For minimizer
@@ -127,3 +133,5 @@ class CRayTrace
 
 
 };
+
+#endif 

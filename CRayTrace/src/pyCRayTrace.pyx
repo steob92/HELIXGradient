@@ -297,8 +297,12 @@ cdef class pyCRayTrace:
 
     def getChi2(self, params, x0, y0, xtheta0, ytheta0, x, y, xerr, yerr):
         data = self.analyzeTile(params, x0, y0, xtheta0, ytheta0)
-        xchi2 = (x - data[:,:,0])**2 / xerr / xerr
-        ychi2 = (y - data[:,:,1])**2 / yerr / yerr
+        mask = (xerr > 0 ) & (yerr > 0)
+        xproj = x0 + (self._CRayTrace.fdLaserRadiator + self._CRayTrace.fdRadiatorImage + self._CRayTrace.fFrameThickness[0]) * np.tan(xtheta0)
+        yproj = y0 + (self._CRayTrace.fdLaserRadiator + self._CRayTrace.fdRadiatorImage + self._CRayTrace.fFrameThickness[0]) * np.tan(ytheta0)
+        
+        xchi2 = (x[mask] - (data[:,:,0][mask] - xproj))**2 / xerr[mask] / xerr[mask]
+        ychi2 = (y[mask] - (data[:,:,1][mask] - yproj))**2 / yerr[mask] / yerr[mask]
         return np.sum(xchi2) + np.sum(ychi2)
 
     def getChi2_internal(self, params, x0, y0, xtheta0, ytheta0):
